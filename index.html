@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Retro Progress Widget</title>
+    <style>
+        :root {
+            /* --- 🎨 轻复古/典雅配色方案 --- */
+            --bg-color: #f7f5f0;       /* 米色纸张背景 */
+            --text-color: #4a453e;     /* 深褐灰文字 */
+            --bar-bg: #e6e2da;         /* 进度条底色（浅咖） */
+            --year-fill: #7d9682;      /* 年进度：莫兰迪绿 */
+            --month-fill: #7d9682;     /* 月进度：同色保持统一，或者用 #c4a484 (浅褐) */
+            --square-filled: #c07a75;  /* 旬度方格实心：复古红/豆沙色 */
+            --square-empty: #e6e2da;   /* 旬度方格空心 */
+        }
+
+        body {
+            margin: 0; padding: 12px;
+            font-family: "Georgia", "Times New Roman", "Songti SC", serif; /* 衬线字体，优雅核心 */
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex; flex-direction: column; gap: 8px; /* 行间距紧凑 */
+            overflow: hidden;
+            box-sizing: border-box;
+            height: 100vh;
+            justify-content: center; /* 垂直居中 */
+        }
+
+        /* 第一行：极简时间 */
+        .header-time {
+            font-size: 16px; /* 较小字号 */
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            margin-bottom: 2px;
+            font-variant-numeric: tabular-nums; /* 数字等宽，防止跳动 */
+        }
+
+        /* 通用行布局：[进度条] [数字] */
+        .row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            height: 14px; /* 限制高度 */
+        }
+
+        /* 数字文字样式 */
+        .stat-text {
+            font-size: 12px;
+            font-style: italic; /* 斜体增加复古感 */
+            min-width: 45px; /* 预留宽度防止抖动 */
+            text-align: right;
+            opacity: 0.8;
+        }
+
+        /* 长条进度条 */
+        .progress-track {
+            flex-grow: 1; /* 占满剩余空间 */
+            height: 6px;
+            background-color: var(--bar-bg);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%;
+            width: 0%;
+            border-radius: 3px;
+            transition: width 0.8s ease;
+        }
+
+        /* 旬度方格容器 */
+        .squares-container {
+            flex-grow: 1;
+            display: flex;
+            gap: 3px; /* 方格间距 */
+            align-items: center;
+        }
+        /* 小方格 */
+        .square {
+            height: 8px;
+            width: 8px;
+            background-color: var(--square-empty);
+            border-radius: 1px; /* 微微圆角 */
+        }
+        .square.filled {
+            background-color: var(--square-filled);
+        }
+
+    </style>
+</head>
+<body>
+
+    <!-- 1. 时间：1.5 Mon 22:35 -->
+    <div class="header-time" id="time-display">Loading...</div>
+
+    <!-- 2. 年进度：条 + n/365 -->
+    <div class="row">
+        <div class="progress-track">
+            <div class="progress-fill" id="year-bar" style="background-color: var(--year-fill)"></div>
+        </div>
+        <div class="stat-text" id="year-text">0/365</div>
+    </div>
+
+    <!-- 3. 月进度：条 + n/31 -->
+    <div class="row">
+        <div class="progress-track">
+            <div class="progress-fill" id="month-bar" style="background-color: var(--month-fill)"></div>
+        </div>
+        <div class="stat-text" id="month-text">0/30</div>
+    </div>
+
+    <!-- 4. 旬度：方格 + n/10 -->
+    <div class="row">
+        <div class="squares-container" id="xun-grid">
+            <!-- JS生成 -->
+        </div>
+        <div class="stat-text" id="xun-text">0/10</div>
+    </div>
+
+    <script>
+        function updateWidget() {
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = now.getMonth(); 
+            const date = now.getDate();
+            
+            // --- 1. 格式化时间: 1.5 Mon 22:35 ---
+            const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+            const dayName = days[now.getDay()];
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            // 月份+1 (因为getMonth是0-11)
+            document.getElementById('time-display').innerText = `${month + 1}.${date} ${dayName} ${hours}:${minutes}`;
+
+            // --- 2. 年进度 ---
+            const startOfYear = new Date(year, 0, 1);
+            const endOfYear = new Date(year + 1, 0, 1);
+            const dayOfYear = Math.floor((now - startOfYear) / (1000 * 60 * 60 * 24)) + 1;
+            const totalDaysInYear = Math.floor((endOfYear - startOfYear) / (1000 * 60 * 60 * 24));
+            const yearPercent = (dayOfYear / totalDaysInYear) * 100;
+            
+            document.getElementById('year-bar').style.width = yearPercent + '%';
+            document.getElementById('year-text').innerText = `${dayOfYear}/${totalDaysInYear}`;
+
+            // --- 3. 月进度 ---
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            const monthPercent = (date / daysInMonth) * 100;
+            
+            document.getElementById('month-bar').style.width = monthPercent + '%';
+            document.getElementById('month-text').innerText = `${date}/${daysInMonth}`;
+
+            // --- 4. 旬度方格逻辑 ---
+            let xunTotal = 10;
+            let xunCurrent = 0;
+
+            if (date <= 10) {
+                // 上旬
+                xunTotal = 10;
+                xunCurrent = date;
+            } else if (date <= 20) {
+                // 中旬
+                xunTotal = 10;
+                xunCurrent = date - 10;
+            } else {
+                // 下旬 (可能是8-11天)
+                xunTotal = daysInMonth - 20;
+                xunCurrent = date - 20;
+            }
+
+            document.getElementById('xun-text').innerText = `${xunCurrent}/${xunTotal}`;
+
+            // 渲染小方格
+            const grid = document.getElementById('xun-grid');
+            grid.innerHTML = ''; // 清空
+            for (let i = 1; i <= xunTotal; i++) {
+                const square = document.createElement('div');
+                square.className = 'square';
+                if (i <= xunCurrent) square.classList.add('filled');
+                grid.appendChild(square);
+            }
+        }
+
+        updateWidget();
+        setInterval(updateWidget, 1000); // 每秒刷新
+    </script>
+</body>
+</html>
